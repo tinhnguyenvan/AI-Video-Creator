@@ -127,11 +127,44 @@
             .then(data => {
                 resultDiv.classList.remove('d-none');
                 if (data.success) {
+                    let modelsHtml = '';
+                    if (data.video_models && data.video_models.length > 0) {
+                        modelsHtml = `
+                            <div class="mt-3">
+                                <div class="fw-semibold mb-2" style="font-size: 0.8rem; color: var(--navy-700);">
+                                    <i class="bi bi-camera-video me-1"></i>Video Models (${data.video_models.length})
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    ${data.video_models.map(model => `
+                                        <div style="background: var(--navy-50); border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1rem;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="fw-bold" style="font-size: 0.85rem; color: var(--navy-900);">
+                                                    ${model.displayName}
+                                                    <span class="badge ms-1" style="background: var(--accent-soft); color: var(--accent); font-size: 0.65rem; font-weight: 700;">v${model.version}</span>
+                                                </span>
+                                                <code style="font-size: 0.7rem; color: var(--navy-400);">${model.name}</code>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: var(--navy-500);">
+                                                ${model.description}
+                                            </div>
+                                            <div class="d-flex gap-3 mt-1" style="font-size: 0.7rem; color: var(--navy-400);">
+                                                <span><i class="bi bi-arrow-down-circle me-1"></i>Input: ${model.inputTokenLimit} tokens</span>
+                                                <span><i class="bi bi-arrow-up-circle me-1"></i>Output: ${model.outputTokenLimit} tokens</span>
+                                                <span><i class="bi bi-gear me-1"></i>${model.supportedGenerationMethods.join(', ')}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     resultDiv.innerHTML = `
                         <div class="alert alert-success mb-0" style="border-radius: 10px; font-size: 0.875rem;">
                             <i class="bi bi-check-circle me-2"></i>
                             <strong>${data.message}</strong><br>
                             <small>Tìm thấy ${data.models_count} models. Video models: ${data.video_models.length}</small>
+                            ${modelsHtml}
                         </div>
                     `;
                 } else {
