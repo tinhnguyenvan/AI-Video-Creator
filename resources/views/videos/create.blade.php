@@ -7,6 +7,33 @@
 @endsection
 
 @section('content')
+    {{-- Rate Limit Warning --}}
+    @if(!$rateLimit['can_generate'])
+        <div class="alert mb-4" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon red" style="width: 48px; height: 48px;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-danger">Đã hết quota hôm nay</h6>
+                    <p class="mb-0 text-muted small">Đã sử dụng {{ $rateLimit['rpd_used'] }}/{{ $rateLimit['rpd_limit'] }} video trong ngày. Vui lòng thử lại vào ngày mai.</p>
+                </div>
+            </div>
+        </div>
+    @elseif($rateLimit['rpd_remaining'] <= 3)
+        <div class="alert mb-4" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon yellow" style="width: 48px; height: 48px;">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1" style="color: #b45309;">Sắp hết quota</h6>
+                    <p class="mb-0 text-muted small">Còn lại {{ $rateLimit['rpd_remaining'] }}/{{ $rateLimit['rpd_limit'] }} video trong ngày. Đã dùng {{ $rateLimit['rpm_used'] }}/{{ $rateLimit['rpm_limit'] }} request/phút.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="row g-4">
         {{-- Main Form --}}
         <div class="col-lg-8">
@@ -39,6 +66,22 @@
                                 <a href="{{ route('projects.create') }}" class="text-decoration-none" style="color: var(--accent);">
                                     <i class="bi bi-plus-circle me-1"></i>Tạo dự án mới
                                 </a>
+                            </div>
+                        </div>
+
+                        {{-- Master Character Info --}}
+                        <div class="mb-4 d-none" id="masterCharacterInfo">
+                            <div class="p-3 rounded-3" style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 1px solid #bae6fd;">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-person-badge-fill mt-1" style="color: #0284c7;"></i>
+                                    <div>
+                                        <div class="fw-semibold small mb-1" style="color: #0369a1;">Nhân vật chính của dự án</div>
+                                        <div class="text-muted" style="font-size: 0.8rem;" id="masterCharacterText"></div>
+                                        <div class="mt-1" style="font-size: 0.72rem; color: #0284c7;">
+                                            <i class="bi bi-info-circle me-1"></i>Thông tin này sẽ được tự động ghép vào prompt của video
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -112,8 +155,8 @@
                                 </label>
                                 <select class="form-select @error('resolution') is-invalid @enderror"
                                         id="resolution" name="resolution">
-                                    <option value="720p" {{ old('resolution', '720p') == '720p' ? 'selected' : '' }}>720p</option>
-                                    <option value="1080p" {{ old('resolution') == '1080p' ? 'selected' : '' }}>1080p</option>
+                                    <option value="720p" {{ old('resolution') == '720p' ? 'selected' : '' }}>720p</option>
+                                    <option value="1080p" {{ old('resolution', '1080p') == '1080p' ? 'selected' : '' }}>1080p</option>
                                 </select>
                                 @error('resolution')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -148,9 +191,16 @@
                             <a href="{{ route('videos.index') }}" class="btn btn-ghost">
                                 <i class="bi bi-x-lg me-1"></i> Hủy
                             </a>
-                            <button type="submit" class="btn btn-primary-dark btn-lg px-5" id="submitBtn">
-                                <i class="bi bi-magic me-2"></i>Tạo Video
-                            </button>
+                            <div class="d-flex align-items-center gap-3">
+                                @if($rateLimit['can_generate'])
+                                    <span class="text-muted small">
+                                        <i class="bi bi-speedometer2 me-1"></i>{{ $rateLimit['rpd_remaining'] }}/{{ $rateLimit['rpd_limit'] }} còn lại
+                                    </span>
+                                @endif
+                                <button type="submit" class="btn btn-primary-dark btn-lg px-5" id="submitBtn" {{ !$rateLimit['can_generate'] ? 'disabled' : '' }}>
+                                    <i class="bi bi-magic me-2"></i>{{ $rateLimit['can_generate'] ? 'Tạo Video' : 'Hết quota hôm nay' }}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -219,6 +269,26 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Project master character data
+        const projectsData = @json($projects->pluck('master_character', 'id'));
+        const projectSelect = document.getElementById('project_id');
+        const masterCharacterInfo = document.getElementById('masterCharacterInfo');
+        const masterCharacterText = document.getElementById('masterCharacterText');
+
+        function updateMasterCharacter() {
+            const projectId = projectSelect.value;
+            const masterChar = projectId ? (projectsData[projectId] || '') : '';
+            if (masterChar) {
+                masterCharacterText.textContent = masterChar;
+                masterCharacterInfo.classList.remove('d-none');
+            } else {
+                masterCharacterInfo.classList.add('d-none');
+            }
+        }
+
+        projectSelect.addEventListener('change', updateMasterCharacter);
+        updateMasterCharacter(); // Initial check
+
         // Character counter
         const promptInput = document.getElementById('prompt');
         const charCount = document.getElementById('charCount');

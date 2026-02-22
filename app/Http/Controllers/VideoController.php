@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateVideoJob;
 use App\Models\Project;
 use App\Models\Video;
 use App\Services\GoogleAIStudioService;
@@ -26,11 +27,12 @@ class VideoController extends Controller
         $stats = [
             'total' => Video::count(),
             'completed' => Video::where('status', 'completed')->count(),
-            'processing' => Video::whereIn('status', ['pending', 'processing'])->count(),
+            'processing' => Video::whereIn('status', ['pending', 'processing', 'queued'])->count(),
             'failed' => Video::where('status', 'failed')->count(),
         ];
+        $rateLimit = GenerateVideoJob::getRateLimitStatus();
 
-        return view('videos.index', compact('videos', 'stats'));
+        return view('videos.index', compact('videos', 'stats', 'rateLimit'));
     }
 
     /**
@@ -40,7 +42,8 @@ class VideoController extends Controller
     {
         $projects = Project::orderBy('name')->get();
         $selectedProject = $request->get('project');
-        return view('videos.create', compact('projects', 'selectedProject'));
+        $rateLimit = GenerateVideoJob::getRateLimitStatus();
+        return view('videos.create', compact('projects', 'selectedProject', 'rateLimit'));
     }
 
     /**
@@ -58,17 +61,39 @@ class VideoController extends Controller
             'project_id' => 'nullable|exists:projects,id',
         ]);
 
-        // Create video record
+        // Check daily rate limit before creating
+        $rateLimit = GenerateVideoJob::getRateLimitStatus();
+        if (!$rateLimit['can_generate']) {
+            return back()
+                ->withInput()
+                ->with('error', 'Đã đạt giới hạn ' . $rateLimit['rpd_limit'] . ' video/ngày. Vui lòng thử lại vào ngày mai. (Đã dùng: ' . $rateLimit['rpd_used'] . '/' . $rateLimit['rpd_limit'] . ')');
+        }
+
+        // Create video record with queued status
+        // Build the full prompt: prepend master character from project if available
+        $fullPrompt = $validated['prompt'];
+        $masterCharacter = null;
+        if (!empty($validated['project_id'])) {
+            $project = Project::find($validated['project_id']);
+            if ($project && !empty($project->master_character)) {
+                $masterCharacter = $project->master_character;
+                $fullPrompt = "[Nhân vật chính: {$masterCharacter}]\n\n" . $fullPrompt;
+            }
+        }
+
         $video = Video::create([
             'title' => $validated['title'],
             'prompt' => $validated['prompt'],
-            'status' => 'pending',
+            'status' => 'queued',
             'resolution' => $validated['resolution'],
             'duration' => $validated['duration'],
             'project_id' => $validated['project_id'] ?? null,
             'metadata' => [
                 'aspect_ratio' => $validated['aspect_ratio'],
                 'resolution' => $validated['resolution'],
+                'queued_at' => now()->toISOString(),
+                'master_character' => $masterCharacter,
+                'full_prompt' => $masterCharacter ? $fullPrompt : null,
             ],
         ]);
 
@@ -79,33 +104,31 @@ class VideoController extends Controller
             'resolution' => $validated['resolution'],
         ];
 
-        // Handle reference image
+        // Handle reference image - save to storage for queue access
         if ($request->hasFile('reference_image')) {
-            $imageContent = file_get_contents($request->file('reference_image')->getRealPath());
-            $options['image_base64'] = base64_encode($imageContent);
+            $imagePath = $request->file('reference_image')->store('temp/reference-images', 'public');
+            $options['reference_image_path'] = $imagePath;
             $options['image_mime_type'] = $request->file('reference_image')->getMimeType();
         }
 
-        // Call AI Studio API
-        $result = $this->aiService->generateVideo($validated['prompt'], $options);
-
-        if ($result['success']) {
-            $video->update([
-                'status' => 'processing',
-                'google_operation_name' => $result['operation_name'],
-            ]);
-
-            return redirect()->route('videos.show', $video)
-                ->with('success', 'Video đang được tạo! Quá trình này có thể mất vài phút.');
-        } else {
-            $video->update([
-                'status' => 'failed',
-                'error_message' => $result['error'] ?? 'Lỗi không xác định',
-            ]);
-
-            return redirect()->route('videos.show', $video)
-                ->with('error', 'Lỗi khi gửi yêu cầu tạo video: ' . ($result['error'] ?? 'Lỗi không xác định'));
+        // Dispatch to queue with smart delay based on current RPM usage
+        $delay = 0;
+        if ($rateLimit['rpm_remaining'] <= 0) {
+            $delay = GenerateVideoJob::RPM_DELAY;
         }
+
+        GenerateVideoJob::dispatch($video, $options)
+            ->delay(now()->addSeconds($delay));
+
+        $queuedCount = Video::where('status', 'queued')->count();
+        $message = 'Video đã được thêm vào hàng đợi!';
+        if ($queuedCount > 1) {
+            $message .= ' (Vị trí: #' . $queuedCount . ' trong hàng đợi)';
+        }
+        $message .= ' Còn lại: ' . $rateLimit['rpd_remaining'] . '/' . $rateLimit['rpd_limit'] . ' video hôm nay.';
+
+        return redirect()->route('videos.show', $video)
+            ->with('success', $message);
     }
 
     /**
@@ -151,7 +174,7 @@ class VideoController extends Controller
      */
     public function checkStatus(Video $video)
     {
-        if (!$video->google_operation_name || $video->status === 'completed') {
+        if (!$video->google_operation_name || in_array($video->status, ['completed', 'queued', 'pending'])) {
             return response()->json([
                 'status' => $video->status,
                 'status_label' => $video->status_label,
@@ -226,30 +249,29 @@ class VideoController extends Controller
             return back()->with('error', 'Chỉ có thể thử lại video bị lỗi.');
         }
 
+        $rateLimit = GenerateVideoJob::getRateLimitStatus();
+        if (!$rateLimit['can_generate']) {
+            return back()->with('error', 'Đã đạt giới hạn ' . $rateLimit['rpd_limit'] . ' video/ngày. Vui lòng thử lại vào ngày mai.');
+        }
+
         $options = [
             'aspect_ratio' => $video->metadata['aspect_ratio'] ?? '16:9',
             'duration' => $video->duration ?? 8,
             'resolution' => $video->metadata['resolution'] ?? $video->resolution ?? '720p',
         ];
 
-        $result = $this->aiService->generateVideo($video->prompt, $options);
-
-        if ($result['success']) {
-            $video->update([
-                'status' => 'processing',
-                'google_operation_name' => $result['operation_name'],
-                'error_message' => null,
-            ]);
-
-            return redirect()->route('videos.show', $video)
-                ->with('success', 'Đang thử tạo lại video!');
-        }
-
+        // Reset status and dispatch to queue
         $video->update([
-            'error_message' => $result['error'] ?? 'Lỗi không xác định',
+            'status' => 'queued',
+            'error_message' => null,
         ]);
 
-        return back()->with('error', 'Thử lại thất bại: ' . ($result['error'] ?? 'Lỗi không xác định'));
+        $delay = $rateLimit['rpm_remaining'] <= 0 ? GenerateVideoJob::RPM_DELAY : 0;
+        GenerateVideoJob::dispatch($video, $options)
+            ->delay(now()->addSeconds($delay));
+
+        return redirect()->route('videos.show', $video)
+            ->with('success', 'Video đã được thêm vào hàng đợi để thử lại! Còn lại: ' . $rateLimit['rpd_remaining'] . '/' . $rateLimit['rpd_limit'] . ' video hôm nay.');
     }
 
     /**

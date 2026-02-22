@@ -58,6 +58,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
+            'master_character' => 'nullable|string|max:2000',
             'color' => 'required|string|max:7',
         ]);
 
@@ -101,6 +102,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
+            'master_character' => 'nullable|string|max:2000',
             'color' => 'required|string|max:7',
         ]);
 

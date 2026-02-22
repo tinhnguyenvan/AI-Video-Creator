@@ -698,7 +698,7 @@
             </div>
             <div class="sidebar-brand-text">
                 AI Video Creator
-                <small>Powered by Google Veo</small>
+                <small>Powered by <a href="https://tweb.com.vn" target="_blank">tweb.com.vn</a></small>
             </div>
         </div>
 
@@ -792,7 +792,7 @@
 
         {{-- Footer --}}
         <footer class="main-footer">
-            &copy; {{ date('Y') }} AI Video Creator &mdash; Powered by Google AI Studio (Veo 3.1)
+            &copy; {{ date('Y') }} AI Video Creator &mdash; Powered by <a href="https://tweb.com.vn" target="_blank">tweb.com.vn</a>
         </footer>
     </div>
 

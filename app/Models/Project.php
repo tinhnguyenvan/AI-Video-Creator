@@ -10,6 +10,7 @@ class Project extends Model
     protected $fillable = [
         'name',
         'description',
+        'master_character',
         'color',
         'status',
     ];

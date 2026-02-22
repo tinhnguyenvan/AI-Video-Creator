@@ -44,6 +44,23 @@
                             @enderror
                         </div>
 
+                        {{-- Master Character --}}
+                        <div class="mb-4">
+                            <label for="master_character" class="form-label">
+                                <i class="bi bi-person-badge me-1"></i> Nhân vật chính (Master Character) <span class="fw-normal text-muted">(Tùy chọn)</span>
+                            </label>
+                            <textarea class="form-control @error('master_character') is-invalid @enderror"
+                                      id="master_character" name="master_character" rows="4"
+                                      placeholder="Mô tả chi tiết nhân vật chính xuất hiện xuyên suốt các video...">{{ old('master_character', $project->master_character) }}</textarea>
+                            @error('master_character')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Mô tả này sẽ được tự động ghép vào prompt của mỗi video trong dự án để đảm bảo nhân vật đồng bộ.
+                            </div>
+                        </div>
+
                         {{-- Color --}}
                         <div class="mb-4">
                             <label class="form-label">

@@ -33,6 +33,7 @@ class Video extends Model
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->status) {
+            'queued' => 'secondary',
             'pending' => 'warning',
             'processing' => 'info',
             'completed' => 'success',
@@ -44,6 +45,7 @@ class Video extends Model
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
+            'queued' => 'Hàng đợi',
             'pending' => 'Chờ xử lý',
             'processing' => 'Đang tạo',
             'completed' => 'Hoàn thành',

@@ -25,14 +25,22 @@
                             Trình duyệt không hỗ trợ video.
                         </video>
                     </div>
-                @elseif(in_array($video->status, ['pending', 'processing']))
+                @elseif(in_array($video->status, ['queued', 'pending', 'processing']))
                     <div style="background: linear-gradient(135deg, var(--navy-900), var(--navy-700)); min-height: 420px; border-radius: 12px 12px 0 0;"
                          class="d-flex flex-column align-items-center justify-content-center text-white" id="processingArea">
-                        <div class="spinner-border spinner-accent mb-4" style="width: 3.5rem; height: 3.5rem; border-width: 3px;" role="status">
-                            <span class="visually-hidden">Đang tạo video...</span>
-                        </div>
-                        <h5 class="fw-bold mb-2" id="statusText">Đang tạo video...</h5>
-                        <p class="mb-3" style="color: var(--navy-200); font-size: 0.9rem;" id="statusSubtext">Quá trình này có thể mất 2-5 phút</p>
+                        @if($video->status === 'queued')
+                            <div class="mb-4" style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-hourglass-split" style="font-size: 1.5rem; color: var(--accent);"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2" id="statusText">Đang chờ trong hàng đợi...</h5>
+                            <p class="mb-3" style="color: var(--navy-200); font-size: 0.9rem;" id="statusSubtext">Video sẽ tự động chuyển sang xử lý khi đến lượt</p>
+                        @else
+                            <div class="spinner-border spinner-accent mb-4" style="width: 3.5rem; height: 3.5rem; border-width: 3px;" role="status">
+                                <span class="visually-hidden">Đang tạo video...</span>
+                            </div>
+                            <h5 class="fw-bold mb-2" id="statusText">Đang tạo video...</h5>
+                            <p class="mb-3" style="color: var(--navy-200); font-size: 0.9rem;" id="statusSubtext">Quá trình này có thể mất 2-5 phút</p>
+                        @endif
                         <div class="progress" style="width: 220px; height: 3px; background: var(--navy-600); border-radius: 4px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%; background: var(--accent);"></div>
                         </div>
@@ -184,7 +192,7 @@
 @endsection
 
 @push('scripts')
-@if(in_array($video->status, ['pending', 'processing']))
+@if(in_array($video->status, ['queued', 'pending', 'processing']))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const videoId = {{ $video->id }};
@@ -231,6 +239,15 @@
                     document.getElementById('statusText').textContent = 'Tạo video thất bại';
                     document.getElementById('statusSubtext').textContent = data.error_message || 'Lỗi không xác định';
                     setTimeout(() => location.reload(), 2000);
+
+                } else if (data.status === 'queued') {
+                    document.getElementById('statusText').textContent = 'Đang chờ trong hàng đợi...';
+                    document.getElementById('statusSubtext').textContent = 'Video sẽ tự động chuyển sang xử lý khi đến lượt';
+
+                } else if (data.status === 'processing') {
+                    const dots = '.'.repeat((pollCount % 3) + 1);
+                    document.getElementById('statusText').textContent = 'Đang tạo video' + dots;
+                    document.getElementById('statusSubtext').textContent = `Đang xử lý (${pollCount * 5}s)... Vui lòng chờ`;
 
                 } else {
                     const dots = '.'.repeat((pollCount % 3) + 1);

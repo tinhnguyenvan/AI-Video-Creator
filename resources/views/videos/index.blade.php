@@ -18,6 +18,14 @@
                 <a href="{{ route('videos.create') }}" class="btn btn-cta btn-lg px-4">
                     <i class="bi bi-plus-lg"></i> Tạo Video Mới
                 </a>
+                <div class="mt-2" style="font-size: 0.75rem;">
+                    <span style="color: rgba(255,255,255,0.7);">
+                        <i class="bi bi-speedometer2 me-1"></i>API:
+                        <strong style="color: {{ $rateLimit['rpd_remaining'] > 3 ? '#4ade80' : ($rateLimit['rpd_remaining'] > 0 ? '#fbbf24' : '#f87171') }};">{{ $rateLimit['rpd_used'] }}/{{ $rateLimit['rpd_limit'] }}</strong> hôm nay
+                        &bull;
+                        <strong style="color: {{ $rateLimit['rpm_remaining'] > 0 ? '#4ade80' : '#fbbf24' }};">{{ $rateLimit['rpm_used'] }}/{{ $rateLimit['rpm_limit'] }}</strong> /phút
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -83,10 +91,12 @@
                                         </video>
                                     @else
                                         <div class="video-thumb-placeholder {{ $video->status === 'failed' ? 'failed' : ($video->status !== 'completed' ? 'processing' : '') }}">
-                                            @if($video->status === 'processing' || $video->status === 'pending')
+                                            @if(in_array($video->status, ['processing', 'pending']))
                                                 <div class="spinner-border spinner-accent" role="status">
                                                     <span class="visually-hidden">Loading...</span>
                                                 </div>
+                                            @elseif($video->status === 'queued')
+                                                <i class="bi bi-hourglass-split" style="color: var(--navy-300); font-size: 2rem;"></i>
                                             @elseif($video->status === 'failed')
                                                 <i class="bi bi-exclamation-triangle-fill"></i>
                                             @else
@@ -95,7 +105,7 @@
                                         </div>
                                     @endif
                                     <div class="video-thumb-badge">
-                                        <span class="badge badge-status bg-{{ $video->status_badge }} {{ in_array($video->status, ['pending', 'processing']) ? 'badge-pulse' : '' }}">
+                                        <span class="badge badge-status bg-{{ $video->status_badge }} {{ in_array($video->status, ['queued', 'pending', 'processing']) ? 'badge-pulse' : '' }}">
                                             {{ $video->status_label }}
                                         </span>
                                     </div>

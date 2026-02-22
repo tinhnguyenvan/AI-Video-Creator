@@ -20,6 +20,11 @@
                         @if($project->description)
                             <p class="mb-0 mt-1" style="font-size: 0.85rem;">{{ $project->description }}</p>
                         @endif
+                        @if($project->master_character)
+                            <p class="mb-0 mt-1" style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">
+                                <i class="bi bi-person-badge me-1"></i>{{ Str::limit($project->master_character, 80) }}
+                            </p>
+                        @endif
                     </div>
                 </div>
             </div>
