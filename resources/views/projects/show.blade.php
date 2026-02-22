@@ -1,23 +1,45 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
-@section('page-title', 'Dashboard')
+@section('title', $project->name)
+@section('page-title', $project->name)
 @section('breadcrumb')
-    <a href="{{ route('home') }}">Trang chủ</a> <span class="mx-1">/</span> Dashboard
+    <a href="{{ route('home') }}">Trang chủ</a> <span class="mx-1">/</span> <a href="{{ route('projects.index') }}">Dự án</a> <span class="mx-1">/</span> {{ Str::limit($project->name, 30) }}
 @endsection
 
 @section('content')
-    {{-- Page Hero --}}
-    <div class="page-hero">
+    {{-- Project Header --}}
+    <div class="page-hero" style="border-left: 5px solid {{ $project->color }};">
         <div class="row align-items-center">
             <div class="col-md-8">
-                <h1><i class="bi bi-camera-reels me-2"></i>AI Video Creator</h1>
-                <p>Tạo video chuyên nghiệp bằng AI với Google AI Studio (Veo 3.1)</p>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: {{ $project->color }}25; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="bi bi-folder-fill" style="color: {{ $project->color }}; font-size: 1.3rem;"></i>
+                    </div>
+                    <div>
+                        <h1 class="mb-0">{{ $project->name }}</h1>
+                        @if($project->description)
+                            <p class="mb-0 mt-1" style="font-size: 0.85rem;">{{ $project->description }}</p>
+                        @endif
+                    </div>
+                </div>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="{{ route('videos.create') }}" class="btn btn-cta btn-lg px-4">
-                    <i class="bi bi-plus-lg"></i> Tạo Video Mới
-                </a>
+                <div class="d-flex gap-2 justify-content-md-end">
+                    <a href="{{ route('videos.create', ['project' => $project->id]) }}" class="btn btn-cta px-3">
+                        <i class="bi bi-plus-lg"></i> Tạo Video
+                    </a>
+                    <a href="{{ route('projects.edit', $project) }}" class="btn btn-ghost" style="border-color: rgba(255,255,255,0.2); color: #fff;">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="d-inline"
+                          onsubmit="return confirm('Bạn có chắc muốn xóa dự án này? Các video sẽ không bị xóa.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-ghost" style="border-color: rgba(255,255,255,0.2); color: #fca5a5;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -62,12 +84,12 @@
         </div>
     </div>
 
-    {{-- Video Grid --}}
+    {{-- Videos Grid --}}
     <div class="card-panel">
         <div class="card-panel-header">
-            <h5><i class="bi bi-grid-3x3-gap me-2"></i>Danh sách Video</h5>
-            <a href="{{ route('videos.create') }}" class="btn btn-primary-dark btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Tạo mới
+            <h5><i class="bi bi-grid-3x3-gap me-2"></i>Video trong dự án</h5>
+            <a href="{{ route('videos.create', ['project' => $project->id]) }}" class="btn btn-primary-dark btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Tạo video mới
             </a>
         </div>
         <div class="card-panel-body">
@@ -102,13 +124,6 @@
                                 </div>
                                 <div class="card-body">
                                     <h6 class="card-title text-truncate">{{ $video->title }}</h6>
-                                    @if($video->project)
-                                        <div class="mb-1">
-                                            <a href="{{ route('projects.show', $video->project) }}" class="badge text-decoration-none" style="background: {{ $video->project->color }}20; color: {{ $video->project->color }}; font-size: 0.7rem; font-weight: 600;">
-                                                <i class="bi bi-folder-fill me-1"></i>{{ $video->project->name }}
-                                            </a>
-                                        </div>
-                                    @endif
                                     <p class="card-text mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                         {{ $video->prompt }}
                                     </p>
@@ -134,9 +149,9 @@
                     <div class="empty-state-icon">
                         <i class="bi bi-camera-reels"></i>
                     </div>
-                    <h5>Chưa có video nào</h5>
-                    <p>Bắt đầu tạo video đầu tiên của bạn bằng AI. Chỉ cần mô tả ý tưởng!</p>
-                    <a href="{{ route('videos.create') }}" class="btn btn-primary-dark btn-lg">
+                    <h5>Chưa có video nào trong dự án</h5>
+                    <p>Tạo video đầu tiên cho dự án "{{ $project->name }}"</p>
+                    <a href="{{ route('videos.create', ['project' => $project->id]) }}" class="btn btn-primary-dark btn-lg">
                         <i class="bi bi-plus-lg me-2"></i>Tạo Video Ngay
                     </a>
                 </div>

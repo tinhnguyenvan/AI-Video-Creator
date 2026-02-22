@@ -3,7 +3,14 @@
 @section('title', $video->title)
 @section('page-title', $video->title)
 @section('breadcrumb')
-    <a href="{{ route('home') }}">Trang chủ</a> <span class="mx-1">/</span> <a href="{{ route('videos.index') }}">Videos</a> <span class="mx-1">/</span> {{ Str::limit($video->title, 30) }}
+    <a href="{{ route('home') }}">Trang chủ</a> <span class="mx-1">/</span>
+    @if($video->project)
+        <a href="{{ route('projects.index') }}">Dự án</a> <span class="mx-1">/</span>
+        <a href="{{ route('projects.show', $video->project) }}">{{ Str::limit($video->project->name, 20) }}</a> <span class="mx-1">/</span>
+    @else
+        <a href="{{ route('videos.index') }}">Videos</a> <span class="mx-1">/</span>
+    @endif
+    {{ Str::limit($video->title, 30) }}
 @endsection
 
 @section('content')
@@ -113,6 +120,16 @@
                 <div class="card-panel-body">
                     <table class="table table-detail table-borderless mb-0">
                         <tbody>
+                            @if($video->project)
+                            <tr>
+                                <td><i class="bi bi-folder-fill me-2"></i>Dự án</td>
+                                <td>
+                                    <a href="{{ route('projects.show', $video->project) }}" class="text-decoration-none fw-semibold" style="color: {{ $video->project->color }};">
+                                        {{ $video->project->name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            @endif
                             <tr>
                                 <td><i class="bi bi-aspect-ratio me-2"></i>Tỉ lệ</td>
                                 <td>{{ $video->metadata['aspect_ratio'] ?? '16:9' }}</td>

@@ -18,6 +18,30 @@
                     <form action="{{ route('videos.store') }}" method="POST" enctype="multipart/form-data" id="createVideoForm">
                         @csrf
 
+                        {{-- Project --}}
+                        <div class="mb-4">
+                            <label for="project_id" class="form-label">
+                                <i class="bi bi-folder me-1"></i> Dự án <span class="fw-normal text-muted">(Tùy chọn)</span>
+                            </label>
+                            <select class="form-select @error('project_id') is-invalid @enderror"
+                                    id="project_id" name="project_id">
+                                <option value="">-- Không thuộc dự án --</option>
+                                @foreach($projects as $project)
+                                    <option value="{{ $project->id }}" {{ old('project_id', $selectedProject) == $project->id ? 'selected' : '' }}>
+                                        {{ $project->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('project_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">
+                                <a href="{{ route('projects.create') }}" class="text-decoration-none" style="color: var(--accent);">
+                                    <i class="bi bi-plus-circle me-1"></i>Tạo dự án mới
+                                </a>
+                            </div>
+                        </div>
+
                         {{-- Title --}}
                         <div class="mb-4">
                             <label for="title" class="form-label">

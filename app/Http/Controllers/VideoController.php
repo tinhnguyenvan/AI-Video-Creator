@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Models\Video;
 use App\Services\GoogleAIStudioService;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class VideoController extends Controller
      */
     public function index()
     {
-        $videos = Video::latest()->paginate(12);
+        $videos = Video::with('project')->latest()->paginate(12);
         $stats = [
             'total' => Video::count(),
             'completed' => Video::where('status', 'completed')->count(),
@@ -35,9 +36,11 @@ class VideoController extends Controller
     /**
      * Show the create video form
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('videos.create');
+        $projects = Project::orderBy('name')->get();
+        $selectedProject = $request->get('project');
+        return view('videos.create', compact('projects', 'selectedProject'));
     }
 
     /**
@@ -52,6 +55,7 @@ class VideoController extends Controller
             'duration' => 'required|integer|in:5,6,7,8',
             'resolution' => 'required|in:720p,1080p',
             'reference_image' => 'nullable|image|max:10240',
+            'project_id' => 'nullable|exists:projects,id',
         ]);
 
         // Create video record
@@ -61,6 +65,7 @@ class VideoController extends Controller
             'status' => 'pending',
             'resolution' => $validated['resolution'],
             'duration' => $validated['duration'],
+            'project_id' => $validated['project_id'] ?? null,
             'metadata' => [
                 'aspect_ratio' => $validated['aspect_ratio'],
                 'resolution' => $validated['resolution'],

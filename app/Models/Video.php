@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Video extends Model
 {
@@ -17,11 +18,17 @@ class Video extends Model
         'duration',
         'resolution',
         'metadata',
+        'project_id',
     ];
 
     protected $casts = [
         'metadata' => 'array',
     ];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     public function getStatusBadgeAttribute(): string
     {

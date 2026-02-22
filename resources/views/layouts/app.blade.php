@@ -713,6 +713,13 @@
             </div>
 
             <div class="nav-item-sidebar">
+                <a href="{{ route('projects.index') }}" class="nav-link-sidebar {{ request()->routeIs('projects.*') ? 'active' : '' }}">
+                    <i class="bi bi-folder-fill"></i>
+                    <span>Dự án</span>
+                </a>
+            </div>
+
+            <div class="nav-item-sidebar">
                 <a href="{{ route('videos.create') }}" class="nav-link-sidebar {{ request()->routeIs('videos.create') ? 'active' : '' }}">
                     <i class="bi bi-plus-square-fill"></i>
                     <span>Tạo Video</span>
