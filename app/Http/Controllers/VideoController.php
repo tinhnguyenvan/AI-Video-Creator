@@ -249,8 +249,9 @@ class VideoController extends Controller
             return back()->with('error', 'File video không tồn tại.');
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->download(
-            $video->video_path,
+        $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($video->video_path);
+        return response()->download(
+            $filePath,
             Str::slug($video->title) . '.mp4'
         );
     }
