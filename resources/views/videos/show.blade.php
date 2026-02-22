@@ -81,6 +81,10 @@
                             </a>
                         @endif
 
+                        <a href="{{ route('videos.edit', $video) }}" class="btn btn-ghost" style="border-color: var(--navy-200);">
+                            <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
+                        </a>
+
                         @if($video->status === 'failed')
                             <form action="{{ route('videos.retry', $video) }}" method="POST" class="d-inline">
                                 @csrf

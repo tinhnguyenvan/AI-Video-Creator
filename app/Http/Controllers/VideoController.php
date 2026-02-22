@@ -117,6 +117,36 @@ class VideoController extends Controller
     }
 
     /**
+     * Show the edit video form
+     */
+    public function edit(Video $video)
+    {
+        $projects = Project::orderBy('name')->get();
+        return view('videos.edit', compact('video', 'projects'));
+    }
+
+    /**
+     * Update the video
+     */
+    public function update(Request $request, Video $video)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'prompt' => 'required|string|max:2000',
+            'project_id' => 'nullable|exists:projects,id',
+        ]);
+
+        $video->update([
+            'title' => $validated['title'],
+            'prompt' => $validated['prompt'],
+            'project_id' => $validated['project_id'] ?? null,
+        ]);
+
+        return redirect()->route('videos.show', $video)
+            ->with('success', 'Video đã được cập nhật thành công.');
+    }
+
+    /**
      * Check video generation status (AJAX)
      */
     public function checkStatus(Video $video)

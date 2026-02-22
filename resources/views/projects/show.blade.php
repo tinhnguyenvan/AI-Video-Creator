@@ -10,7 +10,7 @@
     {{-- Project Header --}}
     <div class="page-hero" style="border-left: 5px solid {{ $project->color }};">
         <div class="row align-items-center">
-            <div class="col-md-8">
+            <div class="col-md-6">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div style="width: 48px; height: 48px; border-radius: 12px; background: {{ $project->color }}25; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <i class="bi bi-folder-fill" style="color: {{ $project->color }}; font-size: 1.3rem;"></i>
@@ -23,7 +23,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
                 <div class="d-flex gap-2 justify-content-md-end">
                     <a href="{{ route('videos.create', ['project' => $project->id]) }}" class="btn btn-cta px-3">
                         <i class="bi bi-plus-lg"></i> Tạo Video

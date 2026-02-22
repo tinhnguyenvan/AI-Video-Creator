@@ -24,6 +24,8 @@ Route::prefix('videos')->name('videos.')->group(function () {
     Route::get('/create', [VideoController::class, 'create'])->name('create');
     Route::post('/', [VideoController::class, 'store'])->name('store');
     Route::get('/{video}', [VideoController::class, 'show'])->name('show');
+    Route::get('/{video}/edit', [VideoController::class, 'edit'])->name('edit');
+    Route::put('/{video}', [VideoController::class, 'update'])->name('update');
     Route::post('/{video}/check-status', [VideoController::class, 'checkStatus'])->name('check-status');
     Route::post('/{video}/retry', [VideoController::class, 'retry'])->name('retry');
     Route::delete('/{video}', [VideoController::class, 'destroy'])->name('destroy');
