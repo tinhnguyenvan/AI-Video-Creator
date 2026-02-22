@@ -1,60 +1,147 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎬 AI Video Creator
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Ứng dụng tạo video bằng AI sử dụng **Google AI Studio (Veo 3.1)** — biến ý tưởng thành video chỉ với một đoạn mô tả.
 
-## About Laravel
+## ✨ Tính năng
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Tạo video từ text** — Nhập prompt mô tả, AI tự động tạo video
+- **Tạo video từ ảnh** — Upload ảnh tham chiếu để tạo video (Image-to-Video)
+- **Tùy chỉnh linh hoạt** — Chọn tỉ lệ (16:9, 9:16, 1:1), thời lượng (5-8 giây), độ phân giải (720p/1080p)
+- **Theo dõi tiến trình** — Auto-polling trạng thái, hiển thị realtime khi video hoàn thành
+- **Dashboard trực quan** — Thống kê tổng quan, danh sách video dạng grid
+- **Quản lý video** — Xem, tải xuống, xóa, thử lại khi thất bại
+- **Kiểm tra kết nối API** — Test connection ngay từ trang cài đặt
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠 Công nghệ
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Stack | Phiên bản |
+|---|---|
+| Laravel | 12.x |
+| PHP | 8.2+ |
+| Bootstrap | 5.3.3 |
+| Google AI Studio | Veo 3.1 (REST API) |
+| Database | SQLite (mặc định) |
 
-## Learning Laravel
+## 📋 Yêu cầu
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP >= 8.2
+- Composer
+- Google AI Studio API Key ([Lấy tại đây](https://aistudio.google.com/apikey))
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Cài đặt
 
-## Laravel Sponsors
+### 1. Clone project
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+git clone <repo-url> app_create_video
+cd app_create_video
+```
 
-### Premium Partners
+### 2. Cài đặt dependencies
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+composer install
+```
 
-## Contributing
+### 3. Cấu hình môi trường
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Code of Conduct
+### 4. Thêm API Key
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Mở file `.env` và thêm API key của bạn:
 
-## Security Vulnerabilities
+```env
+GOOGLE_AI_STUDIO_API_KEY=your_api_key_here
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+> 💡 Lấy API Key miễn phí tại: https://aistudio.google.com/apikey
 
-## License
+### 5. Chạy migration & tạo storage link
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# AI-Video-Creator
+```bash
+php artisan migrate
+php artisan storage:link
+```
+
+### 6. Khởi động ứng dụng
+
+```bash
+php artisan serve
+```
+
+Truy cập: **http://localhost:8000**
+
+## 📖 Hướng dẫn sử dụng
+
+### Tạo video mới
+
+1. Bấm **"Tạo Video Mới"** trên thanh điều hướng hoặc Dashboard
+2. Nhập **tiêu đề** cho video
+3. Viết **prompt mô tả** chi tiết video bạn muốn tạo
+4. Chọn **tỉ lệ khung hình**, **thời lượng**, **độ phân giải**
+5. (Tùy chọn) Upload **ảnh tham chiếu** để tạo video từ hình ảnh
+6. Bấm **"Tạo Video"** và chờ AI xử lý (thường 2-5 phút)
+
+### Mẹo viết prompt hiệu quả
+
+- Mô tả rõ **chủ thể**, **hành động** và **bối cảnh**
+- Dùng thuật ngữ quay phim: `"aerial shot"`, `"close-up"`, `"slow motion"`, `"tracking shot"`
+- Thêm mô tả **ánh sáng**, **màu sắc**, **phong cách**: `"cinematic lighting"`, `"warm tones"`
+- Ghi rõ **chuyển động camera**: `"panning left"`, `"zooming in"`, `"dolly forward"`
+
+### Ví dụ prompt
+
+```
+Cảnh quay drone từ trên cao về một bãi biển nhiệt đới lúc hoàng hôn. 
+Nước biển trong xanh, sóng nhẹ nhàng vỗ bờ cát trắng. Ánh nắng vàng 
+cam chiếu xuống mặt nước tạo phản chiếu lấp lánh. Camera bay chậm 
+dọc bờ biển, phong cách cinematic, 4K.
+```
+
+### Quản lý video
+
+- **Dashboard** — Xem tất cả video với trạng thái (Chờ xử lý / Đang tạo / Hoàn thành / Thất bại)
+- **Chi tiết** — Xem video, thông tin prompt, tải xuống
+- **Thử lại** — Tạo lại video bị lỗi chỉ với 1 click
+- **Cài đặt** — Kiểm tra kết nối API, xem hướng dẫn cấu hình
+
+## 📁 Cấu trúc chính
+
+```
+app/
+├── Http/Controllers/
+│   ├── VideoController.php      # CRUD & xử lý video
+│   └── SettingsController.php   # Trang cài đặt
+├── Models/
+│   └── Video.php                # Model video
+└── Services/
+    └── GoogleAIStudioService.php # Gọi Google AI Studio API
+
+resources/views/
+├── layouts/app.blade.php        # Layout chính (Bootstrap 5.3)
+├── videos/
+│   ├── index.blade.php          # Dashboard
+│   ├── create.blade.php         # Form tạo video
+│   └── show.blade.php           # Chi tiết video
+└── settings/
+    └── index.blade.php          # Trang cài đặt
+
+config/
+└── services_google.php          # Cấu hình Google AI Studio
+```
+
+## ⚙️ Cấu hình nâng cao
+
+Có thể thay đổi model AI trong `.env`:
+
+```env
+GOOGLE_AI_STUDIO_MODEL=veo-3.1-generate-preview
+```
+
+## 📄 License
+
+MIT
