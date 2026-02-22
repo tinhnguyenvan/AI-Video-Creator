@@ -111,7 +111,7 @@
                             </button>
                         </form>
 
-                        <a href="{{ route('videos.index') }}" class="btn btn-ghost ms-auto">
+                        <a href="{{ $video->project ? route('projects.show', $video->project) : route('videos.index') }}" class="btn btn-ghost ms-auto">
                             <i class="bi bi-arrow-left me-1"></i> Quay lại
                         </a>
                     </div>
