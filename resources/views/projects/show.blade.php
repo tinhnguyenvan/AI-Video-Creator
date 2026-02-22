@@ -28,6 +28,11 @@
                     <a href="{{ route('videos.create', ['project' => $project->id]) }}" class="btn btn-cta px-3">
                         <i class="bi bi-plus-lg"></i> Tạo Video
                     </a>
+                    @if($stats['completed'] >= 2)
+                        <a href="{{ route('projects.merge', $project) }}" class="btn btn-ghost" style="border-color: rgba(255,255,255,0.2); color: #fff;">
+                            <i class="bi bi-layers me-1"></i> Ghép Video
+                        </a>
+                    @endif
                     <a href="{{ route('projects.edit', $project) }}" class="btn btn-ghost" style="border-color: rgba(255,255,255,0.2); color: #fff;">
                         <i class="bi bi-pencil"></i>
                     </a>

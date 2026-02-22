@@ -4,10 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Video;
+use App\Services\VideoMergeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
+    protected VideoMergeService $mergeService;
+
+    public function __construct(VideoMergeService $mergeService)
+    {
+        $this->mergeService = $mergeService;
+    }
     /**
      * Display listing of all projects
      */
@@ -112,5 +120,89 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.index')
             ->with('success', 'Dự án "' . $name . '" đã được xóa. Các video vẫn được giữ lại.');
+    }
+
+    /**
+     * Show the merge videos page for a project
+     */
+    public function merge(Project $project)
+    {
+        $completedVideos = $project->videos()
+            ->where('status', 'completed')
+            ->whereNotNull('video_path')
+            ->orderBy('created_at')
+            ->get();
+
+        $ffmpegAvailable = $this->mergeService->isAvailable();
+        $ffmpegVersion = $this->mergeService->getVersion();
+
+        return view('projects.merge', compact('project', 'completedVideos', 'ffmpegAvailable', 'ffmpegVersion'));
+    }
+
+    /**
+     * Execute the video merge
+     */
+    public function executeMerge(Request $request, Project $project)
+    {
+        $validated = $request->validate([
+            'video_ids' => 'required|array|min:2',
+            'video_ids.*' => 'required|exists:videos,id',
+            'title' => 'required|string|max:255',
+            'transition' => 'required|in:none,fade,crossfade',
+            'transition_duration' => 'required|numeric|min:0.3|max:2.0',
+        ]);
+
+        if (!$this->mergeService->isAvailable()) {
+            return back()->with('error', 'FFmpeg chưa được cài đặt trên server.');
+        }
+
+        // Get videos in the specified order
+        $videos = Video::whereIn('id', $validated['video_ids'])
+            ->where('status', 'completed')
+            ->whereNotNull('video_path')
+            ->get()
+            ->sortBy(function ($video) use ($validated) {
+                return array_search($video->id, $validated['video_ids']);
+            });
+
+        if ($videos->count() < 2) {
+            return back()->with('error', 'Cần ít nhất 2 video đã hoàn thành để ghép.');
+        }
+
+        $videoPaths = $videos->pluck('video_path')->toArray();
+        $outputFilename = Str::slug($validated['title']) . '-merged-' . time() . '.mp4';
+
+        $result = $this->mergeService->mergeVideos(
+            $videoPaths,
+            $outputFilename,
+            $validated['transition'],
+            (float) $validated['transition_duration']
+        );
+
+        if ($result['success']) {
+            // Create a new video record for the merged video
+            $mergedVideo = Video::create([
+                'title' => $validated['title'],
+                'prompt' => 'Video ghép từ ' . $videos->count() . ' video: ' . $videos->pluck('title')->implode(', '),
+                'status' => 'completed',
+                'video_path' => $result['path'],
+                'duration' => $result['duration'] ? (int) ceil($result['duration']) : null,
+                'resolution' => $videos->first()->resolution ?? '720p',
+                'project_id' => $project->id,
+                'metadata' => [
+                    'type' => 'merged',
+                    'source_video_ids' => $validated['video_ids'],
+                    'transition' => $validated['transition'],
+                    'transition_duration' => $validated['transition_duration'],
+                    'merged_at' => now()->toISOString(),
+                    'completed_at' => now()->toISOString(),
+                ],
+            ]);
+
+            return redirect()->route('videos.show', $mergedVideo)
+                ->with('success', 'Ghép video thành công! ' . $videos->count() . ' video đã được gộp thành một.');
+        }
+
+        return back()->with('error', $result['error'] ?? 'Lỗi không xác định khi ghép video.');
     }
 }

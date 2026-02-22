@@ -15,6 +15,8 @@ Route::prefix('projects')->name('projects.')->group(function () {
     Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('edit');
     Route::put('/{project}', [ProjectController::class, 'update'])->name('update');
     Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');
+    Route::get('/{project}/merge', [ProjectController::class, 'merge'])->name('merge');
+    Route::post('/{project}/merge', [ProjectController::class, 'executeMerge'])->name('execute-merge');
 });
 
 Route::prefix('videos')->name('videos.')->group(function () {

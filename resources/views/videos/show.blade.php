@@ -57,9 +57,16 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <h4 class="fw-bold mb-1" style="color: var(--navy-900);">{{ $video->title }}</h4>
-                            <small class="text-muted">
-                                <i class="bi bi-calendar3 me-1"></i>{{ $video->created_at->format('d/m/Y H:i') }}
-                            </small>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar3 me-1"></i>{{ $video->created_at->format('d/m/Y H:i') }}
+                                </small>
+                                @if(($video->metadata['type'] ?? null) === 'merged')
+                                    <span class="badge" style="background: #7c3aed20; color: #7c3aed; font-size: 0.65rem; font-weight: 600;">
+                                        <i class="bi bi-layers me-1"></i>Video ghép
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                         <span class="badge badge-status bg-{{ $video->status_badge }} {{ in_array($video->status, ['pending', 'processing']) ? 'badge-pulse' : '' }}" style="font-size: 0.8rem; padding: 0.4rem 0.85rem;" id="statusBadge">
                             {{ $video->status_label }}

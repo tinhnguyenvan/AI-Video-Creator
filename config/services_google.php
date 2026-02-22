@@ -6,4 +6,7 @@ return [
         'base_url' => 'https://generativelanguage.googleapis.com',
         'model' => env('GOOGLE_AI_STUDIO_MODEL', 'veo-3.1-generate-preview'),
     ],
+
+    'ffmpeg_path' => env('FFMPEG_PATH', '/opt/homebrew/bin/ffmpeg'),
+    'ffprobe_path' => env('FFPROBE_PATH', '/opt/homebrew/bin/ffprobe'),
 ];
