@@ -130,14 +130,14 @@
                     resultDiv.innerHTML = `
                         <div class="alert alert-success mb-0" style="border-radius: 10px; font-size: 0.875rem;">
                             <i class="bi bi-check-circle me-2"></i>
-                            <strong>\${data.message}</strong><br>
-                            <small>Tìm thấy \${data.models_count} models. Video models: \${data.video_models.length}</small>
+                            <strong>${data.message}</strong><br>
+                            <small>Tìm thấy ${data.models_count} models. Video models: ${data.video_models.length}</small>
                         </div>
                     `;
                 } else {
                     resultDiv.innerHTML = `
                         <div class="alert alert-danger mb-0" style="border-radius: 10px; font-size: 0.875rem;">
-                            <i class="bi bi-x-circle me-2"></i>\${data.message}
+                            <i class="bi bi-x-circle me-2"></i>${data.message}
                         </div>
                     `;
                 }
@@ -146,7 +146,7 @@
                 resultDiv.classList.remove('d-none');
                 resultDiv.innerHTML = `
                     <div class="alert alert-danger mb-0" style="border-radius: 10px; font-size: 0.875rem;">
-                        <i class="bi bi-x-circle me-2"></i>Lỗi kết nối: \${error.message}
+                        <i class="bi bi-x-circle me-2"></i>Lỗi kết nối: ${error.message}
                     </div>
                 `;
             })
