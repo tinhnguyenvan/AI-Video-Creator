@@ -1,29 +1,26 @@
 @extends('layouts.app')
 
 @section('title', 'Tạo Video Mới')
+@section('page-title', 'Tạo Video Mới')
+@section('breadcrumb')
+    <a href="{{ route('home') }}">Trang chủ</a> <span class="mx-1">/</span> <a href="{{ route('videos.index') }}">Videos</a> <span class="mx-1">/</span> Tạo mới
+@endsection
 
 @section('content')
-    <div class="row justify-content-center">
+    <div class="row g-4">
+        {{-- Main Form --}}
         <div class="col-lg-8">
-            {{-- Back Button --}}
-            <a href="{{ route('videos.index') }}" class="btn btn-light rounded-pill mb-3">
-                <i class="bi bi-arrow-left me-1"></i> Quay lại
-            </a>
-
-            <div class="card card-custom">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h4 class="fw-bold mb-1">
-                        <i class="bi bi-magic me-2 text-primary"></i>Tạo Video Bằng AI
-                    </h4>
-                    <p class="text-muted mb-0">Mô tả video bạn muốn tạo, AI sẽ biến ý tưởng thành hiện thực</p>
+            <div class="card-panel">
+                <div class="card-panel-header">
+                    <h5><i class="bi bi-magic me-2"></i>Tạo Video Bằng AI</h5>
                 </div>
-                <div class="card-body px-4 pb-4">
+                <div class="card-panel-body">
                     <form action="{{ route('videos.store') }}" method="POST" enctype="multipart/form-data" id="createVideoForm">
                         @csrf
 
                         {{-- Title --}}
                         <div class="mb-4">
-                            <label for="title" class="form-label fw-semibold">
+                            <label for="title" class="form-label">
                                 <i class="bi bi-type me-1"></i> Tiêu đề video
                             </label>
                             <input type="text" class="form-control @error('title') is-invalid @enderror"
@@ -36,28 +33,26 @@
 
                         {{-- Prompt --}}
                         <div class="mb-4">
-                            <label for="prompt" class="form-label fw-semibold">
+                            <label for="prompt" class="form-label">
                                 <i class="bi bi-chat-text me-1"></i> Mô tả video (Prompt)
                             </label>
                             <textarea class="form-control @error('prompt') is-invalid @enderror"
-                                      id="prompt" name="prompt" rows="5"
+                                      id="prompt" name="prompt" rows="6"
                                       placeholder="Mô tả chi tiết video bạn muốn tạo. Ví dụ: Cảnh quay từ trên cao về một bãi biển nhiệt đới lúc hoàng hôn, nước biển trong xanh, sóng nhẹ nhàng vỗ bờ, ánh nắng vàng chiếu xuống mặt nước tạo nên sắc cam ấm áp..."
                                       required>{{ old('prompt') }}</textarea>
                             @error('prompt')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">
-                                <i class="bi bi-lightbulb me-1"></i>
-                                Mô tả càng chi tiết, video tạo ra càng chính xác. Tối đa 2000 ký tự.
-                                <span id="charCount" class="float-end">0/2000</span>
+                            <div class="form-text d-flex justify-content-between mt-1">
+                                <span><i class="bi bi-lightbulb me-1"></i> Mô tả càng chi tiết, video càng chính xác</span>
+                                <span id="charCount" class="fw-medium">0/2000</span>
                             </div>
                         </div>
 
-                        {{-- Options Row --}}
+                        {{-- Options --}}
                         <div class="row g-3 mb-4">
-                            {{-- Aspect Ratio --}}
                             <div class="col-md-4">
-                                <label for="aspect_ratio" class="form-label fw-semibold">
+                                <label for="aspect_ratio" class="form-label">
                                     <i class="bi bi-aspect-ratio me-1"></i> Tỉ lệ khung hình
                                 </label>
                                 <select class="form-select @error('aspect_ratio') is-invalid @enderror"
@@ -71,9 +66,8 @@
                                 @enderror
                             </div>
 
-                            {{-- Duration --}}
                             <div class="col-md-4">
-                                <label for="duration" class="form-label fw-semibold">
+                                <label for="duration" class="form-label">
                                     <i class="bi bi-stopwatch me-1"></i> Thời lượng
                                 </label>
                                 <select class="form-select @error('duration') is-invalid @enderror"
@@ -88,9 +82,8 @@
                                 @enderror
                             </div>
 
-                            {{-- Resolution --}}
                             <div class="col-md-4">
-                                <label for="resolution" class="form-label fw-semibold">
+                                <label for="resolution" class="form-label">
                                     <i class="bi bi-display me-1"></i> Độ phân giải
                                 </label>
                                 <select class="form-select @error('resolution') is-invalid @enderror"
@@ -104,10 +97,10 @@
                             </div>
                         </div>
 
-                        {{-- Reference Image (optional) --}}
+                        {{-- Reference Image --}}
                         <div class="mb-4">
-                            <label for="reference_image" class="form-label fw-semibold">
-                                <i class="bi bi-image me-1"></i> Ảnh tham chiếu (Tùy chọn)
+                            <label for="reference_image" class="form-label">
+                                <i class="bi bi-image me-1"></i> Ảnh tham chiếu <span class="fw-normal text-muted">(Tùy chọn)</span>
                             </label>
                             <input type="file" class="form-control @error('reference_image') is-invalid @enderror"
                                    id="reference_image" name="reference_image" accept="image/*">
@@ -126,27 +119,73 @@
                             </div>
                         </div>
 
-                        {{-- Prompt Tips --}}
-                        <div class="alert alert-light border rounded-3 mb-4">
-                            <h6 class="fw-semibold mb-2"><i class="bi bi-stars me-1 text-warning"></i> Mẹo viết prompt hiệu quả:</h6>
-                            <ul class="mb-0 small text-muted">
-                                <li>Mô tả rõ ràng chủ thể, hành động và bối cảnh</li>
-                                <li>Sử dụng các thuật ngữ nhiếp ảnh/quay phim: "aerial shot", "close-up", "slow motion"</li>
-                                <li>Thêm mô tả về ánh sáng, màu sắc, phong cách</li>
-                                <li>Ghi rõ chuyển động camera mong muốn: "panning left", "zooming in"</li>
-                            </ul>
-                        </div>
-
                         {{-- Submit --}}
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ route('videos.index') }}" class="btn btn-light rounded-pill px-4">
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{{ route('videos.index') }}" class="btn btn-ghost">
                                 <i class="bi bi-x-lg me-1"></i> Hủy
                             </a>
-                            <button type="submit" class="btn btn-gradient btn-lg rounded-pill px-5" id="submitBtn">
+                            <button type="submit" class="btn btn-primary-dark btn-lg px-5" id="submitBtn">
                                 <i class="bi bi-magic me-2"></i>Tạo Video
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Sidebar Tips --}}
+        <div class="col-lg-4">
+            <div class="card-panel mb-4">
+                <div class="card-panel-header">
+                    <h5><i class="bi bi-stars me-2 text-warning"></i>Mẹo viết prompt</h5>
+                </div>
+                <div class="card-panel-body">
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 0.9rem;"><i class="bi bi-camera-fill"></i></div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold small mb-1">Chủ thể & Bối cảnh</div>
+                            <div class="text-muted" style="font-size: 0.8rem;">Mô tả rõ ràng chủ thể, hành động và bối cảnh không gian</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon green" style="width: 36px; height: 36px; font-size: 0.9rem;"><i class="bi bi-film"></i></div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold small mb-1">Thuật ngữ quay phim</div>
+                            <div class="text-muted" style="font-size: 0.8rem;">"aerial shot", "close-up", "slow motion", "tracking shot"</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon yellow" style="width: 36px; height: 36px; font-size: 0.9rem;"><i class="bi bi-brightness-high-fill"></i></div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold small mb-1">Ánh sáng & Màu sắc</div>
+                            <div class="text-muted" style="font-size: 0.8rem;">"cinematic lighting", "golden hour", "warm tones", "vibrant colors"</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <div class="flex-shrink-0">
+                            <div class="stat-icon red" style="width: 36px; height: 36px; font-size: 0.9rem;"><i class="bi bi-arrows-move"></i></div>
+                        </div>
+                        <div>
+                            <div class="fw-semibold small mb-1">Chuyển động camera</div>
+                            <div class="text-muted" style="font-size: 0.8rem;">"panning left", "zooming in", "dolly forward", "orbit around"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-panel" style="background: linear-gradient(135deg, var(--navy-900), var(--navy-700)); border-color: var(--navy-600);">
+                <div class="card-panel-body text-center" style="border: none;">
+                    <i class="bi bi-lightbulb-fill text-warning mb-2" style="font-size: 1.5rem;"></i>
+                    <p class="text-white mb-2 fw-semibold small">Prompt mẫu</p>
+                    <p class="mb-0" style="font-size: 0.78rem; color: var(--navy-200); line-height: 1.6;">
+                        "Cảnh quay drone từ trên cao về một bãi biển nhiệt đới lúc hoàng hôn. Nước biển trong xanh, sóng nhẹ vỗ bờ cát trắng. Cinematic, slow motion."
+                    </p>
                 </div>
             </div>
         </div>
