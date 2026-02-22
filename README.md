@@ -2,6 +2,9 @@
 
 Ứng dụng tạo video bằng AI sử dụng **Google AI Studio (Veo 3.1)** — biến ý tưởng thành video chỉ với một đoạn mô tả.
 
+<img width="1468" height="836" alt="Screenshot 2026-02-22 at 4 52 26 PM" src="https://github.com/user-attachments/assets/c5a13d7c-7fce-4cd4-bd60-b66b8322e50f" />
+
+
 ## ✨ Tính năng
 
 - **Tạo video từ text** — Nhập prompt mô tả, AI tự động tạo video
