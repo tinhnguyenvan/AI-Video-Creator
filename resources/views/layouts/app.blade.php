@@ -599,6 +599,75 @@
             border-right-color: transparent;
         }
 
+        /* ===== PAGINATION ===== */
+        .pagination {
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            margin-bottom: 0;
+        }
+
+        .pagination .page-item .page-link {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            color: var(--navy-700);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.45rem 0.85rem;
+            background: #fff;
+            transition: all 0.2s ease;
+            line-height: 1.2;
+        }
+
+        .pagination .page-item .page-link:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-item:first-child .page-link,
+        .pagination .page-item:last-child .page-link {
+            font-size: 0.9rem;
+        }
+
+        /* Pagination info text: "Showing X to Y of Z results" */
+        div[role="navigation"] {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        div[role="navigation"] > div:first-child p {
+            background: linear-gradient(135deg, var(--navy-50), #f0f4ff);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.5rem 1.25rem;
+            font-size: 0.8rem;
+            color: var(--navy-500);
+            font-weight: 500;
+            margin: 0;
+            letter-spacing: 0.01em;
+        }
+
+        div[role="navigation"] > div:first-child p .fw-semibold {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
         /* ===== TOAST ===== */
         .toast-container {
             position: fixed;

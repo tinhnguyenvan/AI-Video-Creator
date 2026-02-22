@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -17,27 +18,14 @@ class GenerateVideoJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * The number of times the job may be attempted.
-     */
-    public int $tries = 10;
-
-    /**
-     * The maximum number of seconds the job can run.
-     */
-    public int $timeout = 180;
-
-    /**
-     * Delete the job if its models no longer exist.
-     */
+    public int $tries = 20;
+    public int $timeout = 300; // 5 phút (bao gồm sleep)
     public bool $deleteWhenMissingModels = true;
 
-    /**
-     * Rate limit constants
-     */
-    const RPM_LIMIT = 2;       // Requests per minute
-    const RPD_LIMIT = 10;      // Requests per day
-    const RPM_DELAY = 35;      // Seconds to wait when RPM exceeded (35s buffer)
+    const RPM_LIMIT = 2;
+    const RPD_LIMIT = 10;
+    const MIN_INTERVAL = 35;       // Tối thiểu 35s giữa 2 API calls
+    const LAST_CALL_KEY = 'video_generate_last_api_call';
     const CACHE_KEY_RPM = 'google_api_rpm';
     const CACHE_KEY_RPD = 'google_api_rpd';
 
@@ -49,27 +37,40 @@ class GenerateVideoJob implements ShouldQueue
     }
 
     /**
-     * Execute the job.
+     * Middleware: WithoutOverlapping đảm bảo CHỈ 1 JOB chạy tại 1 thời điểm.
+     * Key 'global-video-generate' là chung cho tất cả video → tuần tự tuyệt đối.
      */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping('global-video-generate'))
+                ->releaseAfter(self::MIN_INTERVAL + 5) // Release lại queue sau 40s nếu lock busy
+                ->expireAfter(300),                      // Lock tự hết hạn sau 5 phút
+        ];
+    }
+
     public function handle(GoogleAIStudioService $aiService): void
     {
         // Skip if video is no longer pending/queued
         if (!in_array($this->video->status, ['pending', 'queued'])) {
-            Log::info('GenerateVideoJob: Skipping - video status is ' . $this->video->status, [
+            Log::info('GenerateVideoJob: Skipping - status is ' . $this->video->status, [
                 'video_id' => $this->video->id,
             ]);
             return;
         }
 
-        // Check daily rate limit
-        $dailyCalls = (int) Cache::get(self::CACHE_KEY_RPD . ':' . date('Y-m-d'), 0);
+        // === Enforce minimum interval giữa 2 API calls ===
+        $this->enforceMinInterval();
+
+        // === Check daily rate limit ===
+        $dailyKey = self::CACHE_KEY_RPD . ':' . date('Y-m-d');
+        $dailyCalls = (int) Cache::get($dailyKey, 0);
+
         if ($dailyCalls >= self::RPD_LIMIT) {
-            Log::warning('GenerateVideoJob: Daily rate limit reached', [
+            Log::warning('GenerateVideoJob: Daily limit reached', [
                 'video_id' => $this->video->id,
                 'daily_calls' => $dailyCalls,
-                'limit' => self::RPD_LIMIT,
             ]);
-
             $this->video->update([
                 'status' => 'failed',
                 'error_message' => 'Đã đạt giới hạn ' . self::RPD_LIMIT . ' video/ngày. Vui lòng thử lại vào ngày mai.',
@@ -77,55 +78,50 @@ class GenerateVideoJob implements ShouldQueue
             return;
         }
 
-        // Check per-minute rate limit
+        // === Check per-minute rate limit (sleep thay vì release để giữ lock) ===
         $minuteCalls = (int) Cache::get(self::CACHE_KEY_RPM, 0);
         if ($minuteCalls >= self::RPM_LIMIT) {
-            $retryAfter = self::RPM_DELAY;
-            Log::info('GenerateVideoJob: RPM limit reached, releasing back to queue', [
+            Log::info('GenerateVideoJob: RPM limit, sleeping ' . self::MIN_INTERVAL . 's...', [
                 'video_id' => $this->video->id,
-                'minute_calls' => $minuteCalls,
-                'retry_after_seconds' => $retryAfter,
-                'attempt' => $this->attempts(),
+                'rpm' => $minuteCalls,
             ]);
-
-            $this->release($retryAfter);
-            return;
+            sleep(self::MIN_INTERVAL);
         }
 
-        // Track API call BEFORE making the request (optimistic lock)
-        Cache::increment(self::CACHE_KEY_RPM);
-        Cache::put(self::CACHE_KEY_RPM, (int) Cache::get(self::CACHE_KEY_RPM, 1), now()->addSeconds(60));
+        // === Increment counters (trong WithoutOverlapping lock → an toàn) ===
+        $newRpm = Cache::increment(self::CACHE_KEY_RPM);
+        Cache::put(self::CACHE_KEY_RPM, $newRpm, now()->addSeconds(60));
 
-        $dailyKey = self::CACHE_KEY_RPD . ':' . date('Y-m-d');
-        Cache::increment($dailyKey);
-        Cache::put($dailyKey, (int) Cache::get($dailyKey, 1), now()->endOfDay());
+        $newDaily = Cache::increment($dailyKey);
+        Cache::put($dailyKey, $newDaily, now()->endOfDay());
 
-        // Update status to processing
+        // Ghi lại thời điểm gọi API
+        Cache::put(self::LAST_CALL_KEY, now()->timestamp, now()->addMinutes(5));
+
+        // Update status
         $this->video->update(['status' => 'processing']);
 
-        Log::info('GenerateVideoJob: Calling API', [
+        Log::info('GenerateVideoJob: === CALLING API ===', [
             'video_id' => $this->video->id,
             'title' => $this->video->title,
             'attempt' => $this->attempts(),
-            'rpm_count' => $minuteCalls + 1,
-            'rpd_count' => $dailyCalls + 1,
+            'rpm' => $newRpm . '/' . self::RPM_LIMIT,
+            'rpd' => $newDaily . '/' . self::RPD_LIMIT,
         ]);
 
-        // Load reference image from storage if saved during upload
+        // Load reference image
         $options = $this->options;
         if (!empty($options['reference_image_path'])) {
             $imagePath = $options['reference_image_path'];
             if (Storage::disk('public')->exists($imagePath)) {
                 $options['image_base64'] = base64_encode(Storage::disk('public')->get($imagePath));
-                // Clean up temp file
                 Storage::disk('public')->delete($imagePath);
             }
             unset($options['reference_image_path']);
         }
 
-        // Call AI Studio API - use full prompt with master character if available
+        // Call API
         $prompt = $this->video->metadata['full_prompt'] ?? $this->video->prompt;
-
         $result = $aiService->generateVideo($prompt, $options);
 
         if ($result['success']) {
@@ -134,7 +130,7 @@ class GenerateVideoJob implements ShouldQueue
                 'google_operation_name' => $result['operation_name'],
             ]);
 
-            Log::info('GenerateVideoJob: API call successful', [
+            Log::info('GenerateVideoJob: API success', [
                 'video_id' => $this->video->id,
                 'operation_name' => $result['operation_name'],
             ]);
@@ -142,15 +138,18 @@ class GenerateVideoJob implements ShouldQueue
             $errorMessage = $result['error'] ?? 'Lỗi không xác định';
             $statusCode = $result['status_code'] ?? null;
 
-            // If rate limited by Google (429), release back to queue
             if ($statusCode === 429) {
-                Log::warning('GenerateVideoJob: Google API returned 429, releasing to queue', [
+                Log::warning('GenerateVideoJob: Google 429 - rate limited', [
                     'video_id' => $this->video->id,
-                    'error' => $errorMessage,
                 ]);
 
+                // Rollback counters
+                Cache::decrement(self::CACHE_KEY_RPM);
+                Cache::decrement($dailyKey);
+
                 $this->video->update(['status' => 'queued']);
-                $this->release(self::RPM_DELAY * 2);
+                sleep(self::MIN_INTERVAL * 2);
+                $this->release(self::MIN_INTERVAL);
                 return;
             }
 
@@ -159,20 +158,40 @@ class GenerateVideoJob implements ShouldQueue
                 'error_message' => $errorMessage,
             ]);
 
-            Log::error('GenerateVideoJob: API call failed', [
+            Log::error('GenerateVideoJob: API failed', [
                 'video_id' => $this->video->id,
                 'error' => $errorMessage,
                 'status_code' => $statusCode,
             ]);
         }
+
+        // === Sleep sau khi xong để đảm bảo khoảng cách với job tiếp theo ===
+        Log::info('GenerateVideoJob: Done. Sleeping ' . self::MIN_INTERVAL . 's before releasing lock.');
+        sleep(self::MIN_INTERVAL);
     }
 
     /**
-     * Handle a job failure.
+     * Đảm bảo tối thiểu MIN_INTERVAL giây kể từ lần gọi API trước.
      */
+    protected function enforceMinInterval(): void
+    {
+        $lastCallTimestamp = Cache::get(self::LAST_CALL_KEY);
+        if ($lastCallTimestamp) {
+            $elapsed = time() - (int) $lastCallTimestamp;
+            $waitTime = self::MIN_INTERVAL - $elapsed;
+
+            if ($waitTime > 0) {
+                Log::info('GenerateVideoJob: Enforcing interval, sleeping ' . $waitTime . 's', [
+                    'video_id' => $this->video->id,
+                ]);
+                sleep((int) ceil($waitTime));
+            }
+        }
+    }
+
     public function failed(?\Throwable $exception): void
     {
-        Log::error('GenerateVideoJob: Job failed permanently', [
+        Log::error('GenerateVideoJob: Job FAILED permanently', [
             'video_id' => $this->video->id,
             'error' => $exception?->getMessage(),
         ]);
@@ -183,9 +202,6 @@ class GenerateVideoJob implements ShouldQueue
         ]);
     }
 
-    /**
-     * Get current rate limit status (static helper)
-     */
     public static function getRateLimitStatus(): array
     {
         $minuteCalls = (int) Cache::get(self::CACHE_KEY_RPM, 0);

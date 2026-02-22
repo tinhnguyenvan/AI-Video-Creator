@@ -73,7 +73,7 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
-        $videos = $project->videos()->latest()->paginate(12);
+        $videos = $project->videos()->latest()->paginate(50);
 
         $stats = [
             'total' => $project->videos()->count(),

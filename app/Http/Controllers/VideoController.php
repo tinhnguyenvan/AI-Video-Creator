@@ -114,7 +114,7 @@ class VideoController extends Controller
         // Dispatch to queue with smart delay based on current RPM usage
         $delay = 0;
         if ($rateLimit['rpm_remaining'] <= 0) {
-            $delay = GenerateVideoJob::RPM_DELAY;
+            $delay = GenerateVideoJob::MIN_INTERVAL;
         }
 
         GenerateVideoJob::dispatch($video, $options)
@@ -266,7 +266,7 @@ class VideoController extends Controller
             'error_message' => null,
         ]);
 
-        $delay = $rateLimit['rpm_remaining'] <= 0 ? GenerateVideoJob::RPM_DELAY : 0;
+        $delay = $rateLimit['rpm_remaining'] <= 0 ? GenerateVideoJob::MIN_INTERVAL : 0;
         GenerateVideoJob::dispatch($video, $options)
             ->delay(now()->addSeconds($delay));
 
